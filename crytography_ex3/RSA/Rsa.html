@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>RSA Algorithm Demo</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(to right, #1e3c72, #2a5298);
+        color: white;
+        text-align: center;
+        padding: 30px;
+    }
+    .container {
+        background: rgba(0,0,0,0.3);
+        padding: 25px;
+        border-radius: 10px;
+        width: 450px;
+        margin: auto;
+    }
+    input {
+        width: 90%;
+        padding: 8px;
+        margin: 8px 0;
+        border-radius: 5px;
+        border: none;
+    }
+    button {
+        padding: 10px 15px;
+        margin: 5px;
+        border-radius: 5px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .btn-generate { background-color: #4CAF50; color: white; }
+    .btn-encrypt { background-color: #2196F3; color: white; }
+    .btn-decrypt { background-color: #FF9800; color: white; }
+    .btn-clear { background-color: #f44336; color: white; }
+    #output {
+        margin-top: 15px;
+        background: black;
+        padding: 10px;
+        border-radius: 5px;
+        text-align: left;
+        height: 180px;
+        overflow-y: auto;
+        font-size: 14px;
+    }
+</style>
+</head>
+<body>
+
+<h1>RSA Algorithm Implementation</h1>
+
+<div class="container">
+
+    <h3>Key Generation</h3>
+    <input type="number" id="p" placeholder="Enter prime number p">
+    <input type="number" id="q" placeholder="Enter prime number q">
+    <input type="number" id="e" placeholder="Enter public exponent e">
+    <button class="btn-generate" onclick="generateKeys()">Generate Keys</button>
+
+    <h3>Encryption</h3>
+    <input type="number" id="message" placeholder="Enter message m">
+    <button class="btn-encrypt" onclick="encrypt()">Encrypt</button>
+
+    <h3>Decryption</h3>
+    <input type="number" id="cipher" placeholder="Enter cipher text C">
+    <button class="btn-decrypt" onclick="decrypt()">Decrypt</button>
+
+    <br>
+    <button class="btn-clear" onclick="clearOutput()">Clear Output</button>
+
+    <div id="output"></div>
+
+</div>
+
+<script>
+
+let n = null;
+let eValue = null;
+let d = null;
+
+// GCD function
+function gcd(a, b) {
+    while (b !== 0) {
+        let temp = b;
+        b = a % b;
+        a = temp;
+    }
+    return a;
+}
+
+// Extended Euclidean Algorithm
+function modInverse(e, phi) {
+    let t = 0, newT = 1;
+    let r = phi, newR = e;
+
+    while (newR !== 0) {
+        let quotient = Math.floor(r / newR);
+
+        [t, newT] = [newT, t - quotient * newT];
+        [r, newR] = [newR, r - quotient * newR];
+    }
+
+    if (r > 1) return null;
+    if (t < 0) t += phi;
+
+    return t;
+}
+
+function generateKeys() {
+    let p = parseInt(document.getElementById("p").value);
+    let q = parseInt(document.getElementById("q").value);
+    eValue = parseInt(document.getElementById("e").value);
+
+    let output = document.getElementById("output");
+    output.innerHTML = "";
+
+    if (!p || !q || !eValue) {
+        output.innerHTML = "Please enter all values.";
+        return;
+    }
+
+    n = p * q;
+    let phi = (p - 1) * (q - 1);
+
+    output.innerHTML += "Step 1: p = " + p + ", q = " + q + "<br>";
+    output.innerHTML += "Step 2: n = p × q = " + n + "<br>";
+    output.innerHTML += "Step 3: φ(n) = (p-1)(q-1) = " + phi + "<br>";
+
+    if (gcd(eValue, phi) !== 1) {
+        output.innerHTML += "Invalid e. Must be coprime with φ(n).<br>";
+        return;
+    }
+
+    output.innerHTML += "e is valid<br>";
+
+    d = modInverse(eValue, phi);
+
+    output.innerHTML += "Step 4: d ≡ e⁻¹ mod φ(n)<br>";
+    output.innerHTML += "d = " + d + "<br>";
+    output.innerHTML += "Verification: (e × d) mod φ(n) = " + ((eValue * d) % phi) + "<br><br>";
+
+    output.innerHTML += "Public Key (n, e) = (" + n + ", " + eValue + ")<br>";
+    output.innerHTML += "Private Key (d) = " + d + "<br>";
+}
+
+function encrypt() {
+    let m = parseInt(document.getElementById("message").value);
+    let output = document.getElementById("output");
+
+    if (n === null || eValue === null) {
+        output.innerHTML += "Generate keys first!<br>";
+        return;
+    }
+
+    let C = BigInt(m) ** BigInt(eValue) % BigInt(n);
+
+    output.innerHTML += "<br>===== ENCRYPTION =====<br>";
+    output.innerHTML += "C = m^e mod n<br>";
+    output.innerHTML += "C = " + C + "<br>";
+}
+
+function decrypt() {
+    let C = parseInt(document.getElementById("cipher").value);
+    let output = document.getElementById("output");
+
+    if (n === null || d === null) {
+        output.innerHTML += "Generate keys first!<br>";
+        return;
+    }
+
+    let m = BigInt(C) ** BigInt(d) % BigInt(n);
+
+    output.innerHTML += "<br>===== DECRYPTION =====<br>";
+    output.innerHTML += "m = C^d mod n<br>";
+    output.innerHTML += "m = " + m + "<br>";
+}
+
+function clearOutput() {
+    document.getElementById("output").innerHTML = "";
+}
+
+</script>
+
+</body>
+</html>

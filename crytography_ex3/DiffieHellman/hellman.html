@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Diffie-Hellman Algorithm</title>
+    <style>
+    body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(to right, #4e73df, #1cc88a);
+        margin: 40px;
+        text-align: center;
+        color: #333;
+    }
+
+    h2 {
+        color: white;
+    }
+
+    .box {
+        width: 500px;
+        margin: auto;
+        padding: 25px;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    input {
+        width: 90%;
+        padding: 8px;
+        margin: 8px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        outline: none;
+        transition: 0.3s;
+    }
+
+    input:focus {
+        border-color: #4e73df;
+        box-shadow: 0 0 5px rgba(78,115,223,0.5);
+    }
+
+    button {
+        padding: 8px 14px;
+        margin: 6px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        color: white;
+        background-color: #4e73df;
+        transition: 0.3s;
+    }
+
+    button:hover {
+        background-color: #2e59d9;
+    }
+
+    #output {
+        margin-top: 15px;
+        text-align: left;
+        background-color: #f8f9fc;
+        border-radius: 5px;
+        padding: 10px;
+        height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+    }
+</style>
+</head>
+<body>
+
+<h2>Diffie-Hellman Key Exchange</h2>
+
+<div class="box">
+
+    <h3>Setup Parameters</h3>
+    <input type="number" id="p" placeholder="Enter prime number p">
+    <input type="number" id="g" placeholder="Enter primitive root g">
+    <input type="number" id="a" placeholder="Enter Alice private key (a)">
+    <input type="number" id="b" placeholder="Enter Bob private key (b)">
+    <br>
+    <button onclick="setup()">Setup</button>
+
+    <h3>Operations</h3>
+    <button onclick="generatePublicKeys()">Generate Public Keys</button>
+    <button onclick="generateSharedSecret()">Generate Shared Secret</button>
+    <br><br>
+
+    <input type="number" id="message" placeholder="Enter message m">
+    <button onclick="encrypt()">Encrypt</button>
+
+    <input type="number" id="cipher" placeholder="Enter cipher Y">
+    <button onclick="decrypt()">Decrypt</button>
+
+    <div id="output"></div>
+
+</div>
+
+<script>
+
+let p = null;
+let g = null;
+let a = null;
+let b = null;
+let A = null;
+let B = null;
+let K = null;
+
+function setup() {
+    p = parseInt(document.getElementById("p").value);
+    g = parseInt(document.getElementById("g").value);
+    a = parseInt(document.getElementById("a").value);
+    b = parseInt(document.getElementById("b").value);
+
+    let out = document.getElementById("output");
+    out.innerHTML = "Parameters set.<br>";
+}
+
+function generatePublicKeys() {
+    let out = document.getElementById("output");
+
+    if (p == null || g == null || a == null || b == null) {
+        out.innerHTML += "Complete setup first.<br>";
+        return;
+    }
+
+    A = BigInt(g) ** BigInt(a) % BigInt(p);
+    B = BigInt(g) ** BigInt(b) % BigInt(p);
+
+    out.innerHTML += "Alice Public Key (A = g^a mod p) = " + A + "<br>";
+    out.innerHTML += "Bob Public Key (B = g^b mod p) = " + B + "<br>";
+}
+
+function generateSharedSecret() {
+    let out = document.getElementById("output");
+
+    if (A == null || B == null) {
+        out.innerHTML += "Generate public keys first.<br>";
+        return;
+    }
+
+    let K_alice = BigInt(B) ** BigInt(a) % BigInt(p);
+    let K_bob = BigInt(A) ** BigInt(b) % BigInt(p);
+
+    K = K_alice;
+
+    out.innerHTML += "Alice computes K = " + K_alice + "<br>";
+    out.innerHTML += "Bob computes K = " + K_bob + "<br>";
+    out.innerHTML += "Shared Secret Key (K) = " + K + "<br>";
+}
+
+function encrypt() {
+    let out = document.getElementById("output");
+
+    if (K == null) {
+        out.innerHTML += "Generate shared secret first.<br>";
+        return;
+    }
+
+    let m = parseInt(document.getElementById("message").value);
+
+    let Y = (BigInt(m) * BigInt(K)) % BigInt(p);
+
+    out.innerHTML += "Encrypted Y = (m × K) mod p = " + Y + "<br>";
+}
+
+function modInverse(k, p) {
+    for (let i = 1; i < p; i++) {
+        if ((k * i) % p === 1) {
+            return i;
+        }
+    }
+    return null;
+}
+
+function decrypt() {
+    let out = document.getElementById("output");
+
+    if (K == null) {
+        out.innerHTML += "Generate shared secret first.<br>";
+        return;
+    }
+
+    let Y = parseInt(document.getElementById("cipher").value);
+
+    let K_inv = modInverse(Number(K), p);
+
+    let m = (Y * K_inv) % p;
+
+    out.innerHTML += "Decrypted message m = " + m + "<br>";
+}
+
+</script>
+
+</body>
+</html>
