@@ -1,0 +1,556 @@
+# ================= CAESAR CIPHER =================
+def caesar(text, encrypt=True):
+    shift = 3 if encrypt else 23
+    result = ""
+    steps = "Shift = 3\n\n"
+
+    for c in text:
+        v = ord(c) - 65
+        nv = (v + shift) % 26
+        nc = chr(nv + 65)
+        steps += f"{c} -> ({v}+3)%26 = {nv} -> {nc}\n"
+        result += nc
+
+    return result, steps
+
+# ================= PLAYFAIR CIPHER =================
+def create_matrix(key):
+    key = key.replace("J", "I")
+    alpha = "ABCDEFGHIKLMNOPQRSTUVWXYZ"
+    s = ""
+    for c in key + alpha:
+        if c not in s:
+            s += c
+    return [list(s[i*5:(i+1)*5]) for i in range(5)]
+
+def find(c, m):
+    for i in range(5):
+        for j in range(5):
+            if m[i][j] == c:
+                return i, j
+
+def playfair(text, key, encrypt=True):
+    text = text.replace("J", "I")
+    processed, i = "", 0
+
+    while i < len(text):
+        a = text[i]
+        b = text[i+1] if i+1 < len(text) else "X"
+        if a == b:
+            processed += a + "X"
+            i += 1
+        else:
+            processed += a + b
+            i += 2
+
+    if len(processed) % 2 != 0:
+        processed += "X"
+
+    matrix = create_matrix(key)
+    shift = 1 if encrypt else -1
+    result = ""
+    steps = "Playfair Matrix:\n"
+
+    for r in matrix:
+        steps += " ".join(r) + "\n"
+
+    steps += "\nDigraph Steps:\n"
+
+    for i in range(0, len(processed), 2):
+        a, b = processed[i], processed[i+1]
+        r1, c1 = find(a, matrix)
+        r2, c2 = find(b, matrix)
+
+        if r1 == r2:
+            x = matrix[r1][(c1 + shift) % 5]
+            y = matrix[r2][(c2 + shift) % 5]
+        elif c1 == c2:
+            x = matrix[(r1 + shift) % 5][c1]
+            y = matrix[(r2 + shift) % 5][c2]
+        else:
+            x = matrix[r1][c2]
+            y = matrix[r2][c1]
+
+        result += x + y
+        steps += f"{a}{b} -> ({r1},{c1}) ({r2},{c2}) -> {x}{y}\n"
+
+    return result, steps
+
+# ================= HILL CIPHER =================
+def mod_inv(a):
+    for i in range(1, 26):
+        if (a * i) % 26 == 1:
+            return i
+    return None
+
+def inverse_matrix(m):
+    a, b, c, d = m
+    det = (a*d - b*c) % 26
+    inv = mod_inv(det)
+    if inv is None:
+        return None
+    return [(d*inv)%26, (-b*inv)%26, (-c*inv)%26, (a*inv)%26]
+
+def hill(text, key, encrypt=True):
+    m = list(map(int, key.split()))
+
+    if not encrypt:
+        m = inverse_matrix(m)
+        if not m:
+            return "", "Matrix not invertible"
+
+    if len(text) % 2 != 0:
+        text += "X"
+
+    result = ""
+    steps = "Matrix:\n"
+    steps += f"{m[0]} {m[1]}\n{m[2]} {m[3]}\n\n"
+
+    for i in range(0, len(text), 2):
+        x1 = ord(text[i]) - 65
+        x2 = ord(text[i+1]) - 65
+        y1 = (m[0]*x1 + m[1]*x2) % 26
+        y2 = (m[2]*x1 + m[3]*x2) % 26
+
+        c1 = chr(y1 + 65)
+        c2 = chr(y2 + 65)
+
+        steps += f"{text[i]}{text[i+1]} -> ({x1},{x2}) -> ({y1},{y2}) -> {c1}{c2}\n"
+        result += c1 + c2
+
+    return result, steps
+
+# ================= MENU DRIVER =================
+while True:
+    print("\n--- SUBSTITUTION CIPHER MENU ---")
+    print("1. Caesar Cipher")
+    print("2. Playfair Cipher")
+    print("3. Hill Cipher")
+    print("4. Exit")
+
+    choice = input("Choose Cipher: ")
+
+    if choice == "4":
+        print("Program Ended")
+        break
+
+    print("\n1. Encrypt")
+    print("2. Decrypt")
+    mode = input("Choose Operation: ")
+    encrypt = True if mode == "1" else False
+
+    if choice == "1":
+        text = input("Enter Plain Text: ").upper().replace(" ", "")
+        result, steps = caesar(text, encrypt)
+
+    elif choice == "2":
+        text = input("Enter Plain Text: ").upper().replace(" ", "")
+        key = input("Enter Key: ").upper().replace(" ", "")
+        result, steps = playfair(text, key, encrypt)
+
+    elif choice == "3":
+        text = input("Enter Plain Text: ").upper().replace(" ", "")
+        key = input("Enter 2x2 Matrix (a b c d): ")
+        result, steps = hill(text, key, encrypt)
+
+    else:
+        print("Invalid Choice")
+        continue
+
+    print("\nResult:", result)
+    print("\n--- Intermediate Steps ---")
+    print(steps)
+
+--- SUBSTITUTION CIPHER MENU ---
+1. Caesar Cipher
+2. Playfair Cipher
+3. Hill Cipher
+4. Exit
+Choose Cipher: 1
+
+1. Encrypt
+2. Decrypt
+Choose Operation: 1
+Enter Plain Text: welcome
+
+Result: ZHOFRPH
+
+--- Intermediate Steps ---
+Shift = 3
+
+W -> (22+3)%26 = 25 -> Z
+E -> (4+3)%26 = 7 -> H
+L -> (11+3)%26 = 14 -> O
+C -> (2+3)%26 = 5 -> F
+O -> (14+3)%26 = 17 -> R
+M -> (12+3)%26 = 15 -> P
+E -> (4+3)%26 = 7 -> H
+
+--- SUBSTITUTION CIPHER MENU ---
+1. Caesar Cipher
+2. Playfair Cipher
+3. Hill Cipher
+4. Exit
+Choose Cipher: 1
+
+1. Encrypt
+2. Decrypt
+Choose Operation: 2
+Enter Plain Text: phhwph
+
+Result: MEETME
+
+--- Intermediate Steps ---
+Shift = 3
+
+P -> (15+3)%26 = 12 -> M
+H -> (7+3)%26 = 4 -> E
+H -> (7+3)%26 = 4 -> E
+W -> (22+3)%26 = 19 -> T
+P -> (15+3)%26 = 12 -> M
+H -> (7+3)%26 = 4 -> E
+
+--- SUBSTITUTION CIPHER MENU ---
+1. Caesar Cipher
+2. Playfair Cipher
+3. Hill Cipher
+4. Exit
+Choose Cipher: 2
+
+1. Encrypt
+2. Decrypt
+Choose Operation: 1
+Enter Plain Text: balloon
+Enter Key: mike
+
+Result: GMNWNPPO
+
+--- Intermediate Steps ---
+Playfair Matrix:
+M I K E A
+B C D F G
+H L N O P
+Q R S T U
+V W X Y Z
+
+Digraph Steps:
+BA -> (1,0) (0,4) -> GM
+LX -> (2,1) (4,2) -> NW
+LO -> (2,1) (2,3) -> NP
+ON -> (2,3) (2,2) -> PO
+
+--- SUBSTITUTION CIPHER MENU ---
+1. Caesar Cipher
+2. Playfair Cipher
+3. Hill Cipher
+4. Exit
+Choose Cipher: 2
+
+1. Encrypt
+2. Decrypt
+Choose Operation: 2
+Enter Plain Text: cfsupm
+Enter Key: monarchy
+
+Result: HELXLO
+
+--- Intermediate Steps ---
+Playfair Matrix:
+M O N A R
+C H Y B D
+E F G I K
+L P Q S T
+U V W X Z
+
+Digraph Steps:
+CF -> (1,0) (2,1) -> HE
+SU -> (3,3) (4,0) -> LX
+PM -> (3,1) (0,0) -> LO
+
+--- SUBSTITUTION CIPHER MENU ---
+1. Caesar Cipher
+2. Playfair Cipher
+3. Hill Cipher
+4. Exit
+Choose Cipher: 3
+
+1. Encrypt
+2. Decrypt
+Choose Operation: 1
+Enter Plain Text: attack
+Enter 2x2 Matrix (a b c d): 2 3 3 6
+
+Result: FKMFIO
+
+--- Intermediate Steps ---
+Matrix:
+2 3
+3 6
+
+AT -> (0,19) -> (5,10) -> FK
+TA -> (19,0) -> (12,5) -> MF
+CK -> (2,10) -> (8,14) -> IO
+
+--- SUBSTITUTION CIPHER MENU ---
+1. Caesar Cipher
+2. Playfair Cipher
+3. Hill Cipher
+4. Exit
+Choose Cipher: 3
+
+1. Encrypt
+2. Decrypt
+Choose Operation: 2
+Enter Plain Text: fkmfio
+Enter 2x2 Matrix (a b c d): 2 3 3 6
+
+Result: ATTACK
+
+--- Intermediate Steps ---
+Matrix:
+2 25
+25 18
+
+FK -> (5,10) -> (0,19) -> AT
+MF -> (12,5) -> (19,0) -> TA
+IO -> (8,14) -> (2,10) -> CK
+
+--- SUBSTITUTION CIPHER MENU ---
+1. Caesar Cipher
+2. Playfair Cipher
+3. Hill Cipher
+4. Exit
+Choose Cipher: 4
+Program Ended
+[23bcs010@mepcolinux exe1a]$exit
+exit
+
+Script done on Wed Feb 18 13:55:09 2026
+
+# ================= POWER MOD =================
+def power_mod(base, exp, mod):
+    result = 1
+    for _ in range(exp):
+        result = (result * base) % mod
+    return result
+
+# ================= CHECK PRIMITIVE ROOT =================
+def is_primitive_root(g, p):
+    phi = p - 1
+    values = set()
+    steps = ""
+
+    for k in range(1, phi + 1):
+        val = power_mod(g, k, p)
+        values.add(val)
+        steps += f"{g}^{k} mod {p} = {val}\n"
+
+    return len(values) == phi, steps
+
+# ================= FIND FIRST PRIMITIVE ROOT =================
+def find_first_primitive_root(p):
+    output = ""
+
+    for g in range(2, p):
+        output += f"Trying g = {g}\n"
+        is_root, steps = is_primitive_root(g, p)
+        output += steps
+
+        if is_root:
+            output += f"\nFirst primitive root of {p} is {g}"
+            return output
+
+        output += f"{g} is NOT a primitive root\n\n"
+
+    return "No primitive root found."
+
+
+# ================= MENU DRIVER =================
+print("PRIMITIVE ROOT PROGRAM\n")
+
+p = int(input("Enter a prime number (p): "))
+if p <= 1:
+    print("Invalid prime number")
+    exit()
+
+print(f"\nPhi({p}) = {p - 1}\n")
+
+print("1. Check whether g is a primitive root of p")
+print("2. Find first primitive root of p")
+choice = input("Enter choice: ")
+
+if choice == "1":
+    g = int(input("Enter g: "))
+    result, steps = is_primitive_root(g, p)
+    print("\n--- Steps ---")
+    print(steps)
+
+    if result:
+        print(f"{g} IS a primitive root of {p}")
+    else:
+        print(f"{g} is NOT a primitive root of {p}")
+
+elif choice == "2":
+    print("\n--- Steps ---")
+    print(find_first_primitive_root(p))
+
+else:
+    print("Invalid choice")
+[23bcs010@mepcolinux exe2]$python3 primitive.py
+PRIMITIVE ROOT PROGRAM
+
+Enter a prime number (p): 11
+
+Phi(11) = 10
+
+1. Check whether g is a primitive root of p
+2. Find first primitive root of p
+Enter choice: 1
+Enter g: 2
+
+--- Steps ---
+2^1 mod 11 = 2
+2^2 mod 11 = 4
+2^3 mod 11 = 8
+2^4 mod 11 = 5
+2^5 mod 11 = 10
+2^6 mod 11 = 9
+2^7 mod 11 = 7
+2^8 mod 11 = 3
+2^9 mod 11 = 6
+2^10 mod 11 = 1
+
+2 IS a primitive root of 11
+[@mepcolinux exe2]$python3 primitive.py
+PRIMITIVE ROOT PROGRAM
+
+Enter a prime number (p): 7
+
+Phi(7) = 6
+
+1. Check whether g is a primitive root of p
+2. Find first primitive root of p
+Enter choice: 2
+
+--- Steps ---
+Trying g = 2
+2^1 mod 7 = 2
+2^2 mod 7 = 4
+2^3 mod 7 = 1
+2^4 mod 7 = 2
+2^5 mod 7 = 4
+2^6 mod 7 = 1
+2 is NOT a primitive root
+
+Trying g = 3
+3^1 mod 7 = 3
+3^2 mod 7 = 2
+3^3 mod 7 = 6
+3^4 mod 7 = 4
+3^5 mod 7 = 5
+3^6 mod 7 = 1
+
+First primitive root of 7 is 3
+
+
+
+# ================= EUCLIDEAN ALGORITHM =================
+def gcd_euclidean(a, b):
+    steps = []
+    step = 1
+
+    steps.append("Using Formula:")
+    steps.append("gcd(a, b) = gcd(b, a mod b)\n")
+
+    while b != 0:
+        r = a % b
+        steps.append(f"Step {step}:")
+        steps.append(f"gcd({a}, {b}) = gcd({b}, {a} mod {b})")
+        steps.append(f"gcd({a}, {b}) = gcd({b}, {r})\n")
+        a, b = b, r
+        step += 1
+
+    steps.append("Since remainder = 0")
+    steps.append(f"GCD = {a}")
+
+    return a, "\n".join(steps)
+
+# ================= MENU DRIVER =================
+print("EUCLIDEAN ALGORITHM - GCD\n")
+
+a = int(input("Enter first positive integer (a): "))
+b = int(input("Enter second positive integer (b): "))
+
+if a <= 0 or b <= 0:
+    print("Please enter positive integers only.")
+else:
+    gcd, steps = gcd_euclidean(a, b)
+    print("\n--- Intermediate Steps ---")
+    print(steps)
+
+
+
+EUCLIDEAN ALGORITHM - GCD
+Enter first positive integer (a): 24
+Enter second positive integer (b): 35
+
+--- Intermediate Steps ---
+Using Formula:
+gcd(a, b) = gcd(b, a mod b)
+
+Step 1:
+gcd(24, 35) = gcd(35, 24 mod 35)
+gcd(24, 35) = gcd(35, 24)
+
+Step 2:
+gcd(35, 24) = gcd(24, 35 mod 24)
+gcd(35, 24) = gcd(24, 11)
+
+Step 3:
+gcd(24, 11) = gcd(11, 24 mod 11)
+gcd(24, 11) = gcd(11, 2)
+
+Step 4:
+gcd(11, 2) = gcd(2, 11 mod 2)
+gcd(11, 2) = gcd(2, 1)
+
+Step 5:
+gcd(2, 1) = gcd(1, 2 mod 1)
+gcd(2, 1) = gcd(1, 0)
+
+Since remainder = 0
+GCD = 1
+
+
+
+EUCLIDEAN ALGORITHM - GCD
+
+Enter first positive integer (a): 14
+Enter second positive integer (b): 36
+
+--- Intermediate Steps ---
+Using Formula:
+gcd(a, b) = gcd(b, a mod b)
+
+Step 1:
+gcd(14, 36) = gcd(36, 14 mod 36)
+gcd(14, 36) = gcd(36, 14)
+
+Step 2:
+gcd(36, 14) = gcd(14, 36 mod 14)
+gcd(36, 14) = gcd(14, 8)
+
+Step 3:
+gcd(14, 8) = gcd(8, 14 mod 8)
+gcd(14, 8) = gcd(8, 6)
+
+Step 4:
+gcd(8, 6) = gcd(6, 8 mod 6)
+gcd(8, 6) = gcd(6, 2)
+
+Step 5:
+gcd(6, 2) = gcd(2, 6 mod 2)
+gcd(6, 2) = gcd(2, 0)
+
+Since remainder = 0
+GCD = 2
